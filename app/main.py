@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from search_service import search_logic
+from .database import SessionLocal
+from .services.search_service import search_logic
 
 # 1. Initialize the App
 app = FastAPI(title="Trade Search API")

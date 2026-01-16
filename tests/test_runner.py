@@ -4,16 +4,18 @@ import logging
 import sys
 import os
 
-sys.path.append(os.getcwd())
+# Add parent directory to path so we can import from app
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from search_service import search_logic
-    from database import SessionLocal
+    from app.services.search_service import search_logic
+    from app.database import SessionLocal
 except ImportError:
     print("ERROR: Could not import 'search_service' or 'database'.")
     sys.exit(1)
 
-TEST_DB = 'test_suite.db'
+import os
+TEST_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "test_suite.db")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("TestRunner")
 

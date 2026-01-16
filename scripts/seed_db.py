@@ -1,7 +1,13 @@
 import json
 import time
+import sys
+import os
 from sqlalchemy.orm import Session
-from database import SessionLocal, Instrument, create_tables
+
+# Add parent directory to path so we can import from app
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.database import SessionLocal, Instrument, create_tables
 
 def seed_database():
     db = SessionLocal()
@@ -23,7 +29,8 @@ def seed_database():
         return
 
     # 3. LOAD JSON DATA
-    json_file = "processed_symbol_data.json"
+    import os
+    json_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "processed_symbol_data.json")
     print(f"📂 Reading {json_file}...")
     
     try:

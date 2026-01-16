@@ -1,5 +1,10 @@
-from database import SessionLocal
-from search_service import search_logic
+import sys
+import os
+# Add parent directory to path so we can import from app
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.database import SessionLocal
+from app.services.search_service import search_logic
 
 def run_interactive_tool():
     db = SessionLocal()

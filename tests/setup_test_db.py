@@ -1,8 +1,9 @@
 import sqlite3
 import json
+import os
 
 # DB Name
-DB_NAME = "test_suite.db"
+DB_NAME = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "test_suite.db")
 
 def setup_db():
     conn = sqlite3.connect(DB_NAME)

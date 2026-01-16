@@ -1,7 +1,9 @@
 import sqlite3
 import json
+import os
 
-conn = sqlite3.connect('test_suite.db')
+db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "test_suite.db")
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # Get the latest run ID

@@ -3,7 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # 1. Database Connection
-SQLALCHEMY_DATABASE_URL = "sqlite:///./market.db"
+import os
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "market.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}

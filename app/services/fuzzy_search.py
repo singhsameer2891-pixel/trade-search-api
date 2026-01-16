@@ -1,5 +1,5 @@
-from database import SessionLocal
-from search_service import search_logic
+from ..database import SessionLocal
+from .search_service import search_logic
 
 def run_interactive_tool():
     # 1. Connect to DB
