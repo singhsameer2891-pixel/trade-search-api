@@ -1,0 +1,29 @@
+Checking python and pip
+---------------------------------------------------------------
+which python
+which pip
+
+Activating virtual environment
+---------------------------------------------------------------
+cd /Users/sameersingh/Documents/search-api
+source venv/bin/activate
+
+
+Checking if venv is working
+---------------------------------------------------------------
+python -c "import sys, pathlib; print(pathlib.Path(sys.executable).resolve())"
+OR if (venv) is visible in front of the current terminal path
+
+Installing requirements.txt
+---------------------------------------------------------------
+pip install -r requirements.txt
+
+
+Path
+---------------------------------------------------------------
+/Users/sameersingh/Documents/search-api
+
+
+Run the server
+---------------------------------------------------------------
+python -m uvicorn main:app --reload
