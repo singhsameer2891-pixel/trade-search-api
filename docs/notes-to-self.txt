@@ -27,3 +27,9 @@ Path
 Run the server
 ---------------------------------------------------------------
 python -m uvicorn main:app --reload
+
+
+Custom command to add untracked files and commit modifed/deleted ones
+---------------------------------------------------------------
+git config --global alias.save '!git add -A && git commit -m'
+git save "wip: added market files and cleaned up db"
