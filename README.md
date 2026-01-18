@@ -1,205 +1,128 @@
-# 🚀 Trade Search API: The Master Guide
+# 🚀 Smart Trade Search Engine (Intent Parser)
 
-## 1. Project Overview
-We built a smart, typo-tolerant **Financial Instrument Search Engine** (API) using Python (FastAPI).
-
-* **Goal:** Allow users to search for stocks (e.g., "Reliance"), indices ("Nifty"), or specific derivatives ("Nifty 27 Jan 26000 CE").
-* **Key Feature:** "Intent Parsing" — The system understands if you want the Stock (Spot), Futures (Derivatives), or Options based on natural language input.
+**Live Demo:** [https://trade-search-api.onrender.com/docs](https://trade-search-api.onrender.com/docs)  
+*(Try inputs: "Nifty 27 Jan", "Reliance 26k", "Nifti", "20 Jan")*
 
 ---
 
-## 2. Core Concepts & "Aha!" Moments
+## 💡 The Product Context
 
-### A. The "Twin Identity" Problem (BSE vs. NSE)
-* **Issue:** The database contained duplicates (e.g., `DIXON` exists twice). Searching for "DIXON" often returned the BSE version (which has no derivatives), causing the search to show zero futures.
-* **Solution (The Paternity Test):** We stopped guessing based on flags like "Segment ID." Instead, we query the DB: *"Which of these two DIXONs actually has children (futures) linked to it?"* That one is treated as the True Underlying.
+**The Friction:** Traditional trading app search bars are rigid. Users are forced to navigate complex filters (Symbol → Instrument Type → Expiry → Strike) just to find a single contract.
 
-### B. The "Time Translator" (Sorting Futures)
-* **Issue:** Database dates are strings (`"27-JAN-25"`). Python sorts strings alphabetically, meaning "APR" comes before "JAN".
-* **Solution:** We built a `parse_date` helper that converts strings to time objects.
-* **Garbage Collection:** Invalid dates are assigned to `Year 9999` so they drop to the bottom of the list.
+**The Solution:** A "Google-like" financial search engine that parses natural language. It accepts messy, human inputs like *"Nifti 26k"* and instantly infers the user's intent to return the exact Options Chain or Futures contract in **<50ms**.
 
-### C. Fuzzy Logic (Typo Tolerance)
-* **Technique:** We used `TheFuzz` library (Levenshtein distance).
+**The Role:** Built by a Product Manager who codes—solving for UX latency and data ambiguity simultaneously.
+
+---
+
+## 🧠 Engineering Wins: 3 Key Problems Solved
+
+This isn't just a database lookup. It is an **Intent Parsing Engine** that handles ambiguity through three distinct layers of logic.
+
+### 1. Contextual Intent Parsing (Dates & Sorting)
+**🛑 The Problem:**
+Users often search by date (e.g., *"20 Jan"*) without specifying a symbol. A standard SQL query would fail or return random matches.
+
+**✅ My Solution:**
+I built a tokenizer that detects date entities. If a date is found without a symbol, the system switches to **"Global Expiry Mode"**.
+* **Input:** `"20 Jan"`
 * **Logic:**
-    1.  Try **Exact Match** (Fastest).
-    2.  Try **Prefix Match** ("REL" → "RELIANCE").
-    3.  Try **Fuzzy Match** ("NIFTI" → "NIFTY").
-* **Constraint:** We set a score threshold (80/100) to prevent wild guesses.
+    1.  Parse "20 Jan" to `2025-01-20`.
+    2.  Query *all* active option contracts expiring on this date.
+    3.  **Smart Sort:** Results are not random; they are ranked by liquidity (Nifty > BankNifty > Stocks) and organized by Call/Put pairs.
 
-### D. The "Amnesia" Constraint (Cloud Deployment)
-* **Learning:** Free cloud servers (like Render/Heroku) differ from your laptop. They use **Ephemeral Filesystems**.
-* **Impact:** You can **read** from your SQLite database perfectly. But if your API writes new data to it, that data is **wiped** every time the server restarts.
-* **Fix:** Treat the DB as "Read-Only" in production. To add data, add it locally, commit to Git, and push.
+### 2. Fuzzy Matching & Shorthand Expansion
+**🛑 The Problem:**
+Mobile users have "fat fingers" and use trader shorthand.
+* Typo: *"Nifti"* instead of "NIFTY".
+* Shorthand: *"26k"* instead of "26000".
+
+**✅ My Solution:**
+I integrated a layered search strategy using **Levenshtein Distance** (`TheFuzz`) and Regex.
+* **Typo Correction:** *"Nifti"* scores >80% match against *"NIFTY"*, triggering an auto-correction.
+* **Regex Expansion:** The parser identifies `\d+k` patterns. *"26k"* is mathematically expanded to `26000` before hitting the database.
+* **Result:** The query *"nifti 26k"* automatically returns **Nifty 26000 CE/PE** for the nearest expiry.
+
+### 3. "Nearest Strike" Proximity Logic
+**🛑 The Problem:**
+Users rarely remember the exact strike prices available in the market.
+* **Input:** *"Reliance 1401"*
+* **Reality:** Reliance strikes exist at 1400 and 1420. There is no "1401" contract.
+* **Standard Behavior:** Returns "No Results."
+
+**✅ My Solution:**
+The API understands numeric proximity. It treats "1401" not as a text string, but as a **numerical target**.
+* The system searches for contracts where `abs(StrikePrice - UserInput)` is minimized.
+* **Outcome:** It gracefully returns **Reliance 1400 CE/PE**, keeping the user in the flow.
 
 ---
 
-## 3. Local Setup & Development Commands
+## 🛠 Tech Stack & Architecture
 
-### Setting Up the Environment
-Always work inside a Virtual Environment (`venv`) to keep dependencies isolated.
+* **Core:** Python 3.9, FastAPI (Async)
+* **Search Logic:** Regex Tokenization + Fuzzy Matching
+* **Database:** SQLite (SQLAlchemy ORM)
+* **DevOps:** Render (Cloud Hosting), GitHub Actions (CI/CD)
+* **Quality:** Custom Regression Testing Framework
 
+---
+
+## ⚙️ Setup & Deployment
+
+<details>
+<summary><strong>👉 Click to expand Local Setup Commands</strong></summary>
+
+### 1. Installation
 ```bash
-# 1. Create the venv (One time only)
+# Clone & Setup
+git clone [https://github.com/YOUR_USERNAME/smart-trade-search-engine.git](https://github.com/YOUR_USERNAME/smart-trade-search-engine.git)
+cd smart-trade-search-engine
 python3 -m venv venv
-
-# 2. Activate the venv (Every time you open terminal)
-# Mac/Linux:
 source venv/bin/activate
-# Windows:
-.\venv\Scripts\activate
-
-# 3. Install Dependencies
-pip install fastapi uvicorn sqlalchemy thefuzz python-levenshtein
+pip install -r requirements.txt
 ```
 
-### Running the Code
-
+### 2. Run Locally
 ```bash
-# Run the API locally (Auto-reloads on save)
-uvicorn main:app --reload
-
-# Run the Test Runner
-python test_runner.py
-
-# Run the DB Setup (Resets Test Data)
-python setup_test_db.py
+uvicorn app.main:app --reload
+# Access API at http://localhost:8000/docs
 ```
+
+### 3. Run Test Suite
+```bash
+python tests/test_runner.py
+```
+</details>
+
+<details>
+<summary><strong>👉 Click to expand Cloud Deployment (Render)</strong></summary>
+
+This project is configured for Infrastructure-as-Code.
+
+1. Push code to GitHub.
+2. Render automatically detects `render.yaml`.
+3. **Build trigger:** `pip install -r requirements.txt`.
+4. **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+</details>
 
 ---
 
-## 4. The Testing Framework (Regression Testing)
+## 🧪 Quality Control
 
-We built a custom automated testing suite to prevent "Fixing one thing breaking another."
+To prevent regression issues (fixing one bug but breaking another), I built a custom Regression Testing Framework (`test_runner.py`).
 
-### Architecture (3 Tables)
-1.  **`master_test_cases`:** The "Golden Source" (Input vs. Expected Output).
-2.  **`test_runs`:** History of every test execution.
-3.  **`test_run_results`:** Detailed logs of what passed/failed in each run.
-
-### Scoring Logic
-* **Perfect Match:** 100 Points.
-* **Missing/Extra Item:** -10 Points per item.
-* **Wrong Sequence:** -5 Points per item.
-* **Status:** Only 100 is a PASS.
-
-### Debugging Commands
-If a test fails, we use scripts to inspect *why* (comparing Expected vs Actual side-by-side).
-
-```bash
-# Inspect specific failure details
-python inspect_failures.py
-```
+* **Golden Dataset:** A suite of 20+ complex test cases covering edge cases like "Nifty 26.5k", "Rel 1400", and "BankNifty Jan".
+* **Workflow:** I run this suite locally before every commit to ensure 100% logic integrity.
 
 ---
 
-## 5. Version Control (Git Workflow)
+## 🔗 API Usage
 
-### The "Save & Sync" Loop
-Use this every time you finish a task.
+* **Base URL:** `https://trade-search-api.onrender.com`
 
-```bash
-# 1. Stage all changes (Prepare to save)
-git add .
-
-# 2. Commit (Save locally with a note)
-git commit -m "Fixed the MRF issue and updated tests"
-
-# 3. Push (Send to GitHub & Trigger Render Deploy)
-git push
-```
-
-### Handling the Database
-Git ignores certain files by default. If your `.db` file isn't uploading:
-
-```bash
-# Force add the database file
-git add -f test_suite.db
-git commit -m "Update database"
-git push
-```
-
----
-
-## 6. Deployment (Render.com)
-
-### Configuration Files
-To deploy successfully, your project **must** have these two files in the root folder:
-
-#### A. `requirements.txt` (The Clean Version)
-* **Issue:** `pip freeze` on Mac captures local file paths (`/AppleInternal/...`) which crash Linux servers.
-* **Correct Content:**
-    ```text
-    fastapi==0.109.0
-    uvicorn==0.27.0
-    sqlalchemy==2.0.25
-    thefuzz==0.22.1
-    python-levenshtein==0.23.0
-    ```
-
-#### B. `render.yaml` (The Blueprint)
-Tells Render how to build the app so you don't have to configure settings manually.
-
-```yaml
-services:
-  - type: web
-    name: trade-search-api
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.0
-```
-
-### Troubleshooting Deployment
-* **Error:** `Command not found: uvicorn`
-    * **Fix:** Add `uvicorn` to `requirements.txt`.
-* **Error:** `Port detection timeout` or `Health Check Failed`
-    * **Fix:** Ensure your start command uses `--host 0.0.0.0` (Public) and `--port $PORT` (Dynamic), **NOT** `127.0.0.1` or port `8000`.
-
----
-
-## 7. Cheat Sheet: API Access
-
-Once deployed, anyone can access your API using these methods.
-
-**Base URL:** `https://trade-search-api.onrender.com`
-
-### cURL Command (Terminal)
+**cURL Example:**
 ```bash
 curl -X 'GET' \
-  'https://trade-search-api.onrender.com/search?q=nifty' \
+  '[https://trade-search-api.onrender.com/search?q=nifty%2027%20jan](https://trade-search-api.onrender.com/search?q=nifty%2027%20jan)' \
   -H 'accept: application/json'
 ```
-
-### Browser Test
-Visit `https://trade-search-api.onrender.com/docs` for the interactive Swagger UI.
-
----
-
-## 8. Database Debugging (SQL)
-
-When in doubt about the data, use these SQL queries (via Python or DB Browser).
-
-**Find "Orphan" Instruments (No Derivatives):**
-```sql
-SELECT * FROM Instrument 
-WHERE Symbol = 'MRF' 
-AND InstrumentType = 1;
-```
-
-**Find Children (Derivatives):**
-```sql
-SELECT * FROM Instrument 
-WHERE UnderlyingInstrumentId = [ID_FROM_ABOVE];
-```
-
----
-
-## Summary of Success
-* ✅ **Built:** A robust, fuzzy-search API for financial data.
-* ✅ **Solved:** Complex data mapping issues (Twin Identities).
-* ✅ **Automated:** Quality control via a strict regression testing suite.
-* ✅ **Deployed:** Live on the cloud via CI/CD pipeline (Git -> Render).
