@@ -33,6 +33,13 @@ class Instrument(Base):
     OptionType = Column(Integer, nullable=True)
     StrikePrice = Column(Float, nullable=True)
 
+class BrandTag(Base):
+    id = Column(Integer, primary_key=True, index=True)
+    tag = Column(String, index=True)          # e.g., "Maggi"
+    symbol = Column(String)                   # e.g., "NESTLEIND"
+    tag_type = Column(String)                 # e.g., "Product"
+    weight = Column(Integer, default=50)      # Score: Exact brands > Categories
+
 # 3. Create Tables Helper (Safe)
 # This only creates tables if they DO NOT exist. It won't delete anything.
 def create_tables():
